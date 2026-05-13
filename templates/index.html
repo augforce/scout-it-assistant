@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="brand-compact">
+        <button class="brand-link" id="brand-link" type="button" aria-label="Back to home">
+          <span class="brand-mark">Scout</span>
+        </button>
+        <span class="brand-tag">A personal IT Support assistant</span>
+      </div>
+      <button
+        class="icon-btn"
+        title="Re-sync with Drive"
+        aria-label="Re-sync with Drive"
+        hx-post="/sync"
+        hx-target="#sync-status"
+        hx-indicator="#sync-spinner"
+        hx-disabled-elt="this">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div id="sync-spinner" class="htmx-indicator sync-spinner">Syncing with Drive...</div>
+    <div id="sync-status"></div>
+  </header>
+
+  <main class="app-body">
+    <section class="hero">
+      <div class="scout-stage" aria-hidden="true">
+        <div class="bot-walker">
+          <svg class="scout-bot" viewBox="0 0 14 18" shape-rendering="crispEdges">
+            <rect class="led" x="6" y="0" width="2" height="2"/>
+            <rect class="metal" x="6" y="2" width="2" height="1"/>
+            <rect class="metal" x="3" y="3" width="8" height="5"/>
+            <rect class="visor" x="4" y="4" width="6" height="2"/>
+            <rect class="eye" x="5" y="4" width="1" height="1"/>
+            <rect class="eye" x="8" y="4" width="1" height="1"/>
+            <rect class="dark" x="5" y="6" width="4" height="1"/>
+            <rect class="metal" x="2" y="8" width="10" height="5"/>
+            <rect class="dark" x="5" y="9" width="4" height="3"/>
+            <rect class="accent" x="6" y="10" width="2" height="1"/>
+            <rect class="metal" x="0" y="8" width="2" height="4"/>
+            <rect class="dark" x="0" y="11" width="2" height="1"/>
+            <rect class="metal static-arm-right" x="12" y="8" width="2" height="4"/>
+            <rect class="dark static-arm-right" x="12" y="11" width="2" height="1"/>
+            <g class="wave-arm-a">
+              <rect class="dark" x="12" y="3" width="2" height="1"/>
+              <rect class="metal" x="12" y="4" width="2" height="5"/>
+            </g>
+            <g class="wave-arm-b">
+              <rect class="dark" x="13" y="3" width="1" height="1"/>
+              <rect class="metal" x="12" y="4" width="2" height="5"/>
+              <rect class="metal" x="11" y="4" width="1" height="1"/>
+            </g>
+            <g class="legs-a">
+              <rect class="metal" x="3" y="13" width="2" height="4"/>
+              <rect class="metal" x="9" y="13" width="2" height="3"/>
+              <rect class="dark" x="2" y="17" width="3" height="1"/>
+              <rect class="dark" x="9" y="16" width="3" height="1"/>
+            </g>
+            <g class="legs-b">
+              <rect class="metal" x="3" y="13" width="2" height="3"/>
+              <rect class="metal" x="9" y="13" width="2" height="4"/>
+              <rect class="dark" x="3" y="16" width="3" height="1"/>
+              <rect class="dark" x="8" y="17" width="3" height="1"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+      <h2 class="hero-title">Hi, I'm Scout.</h2>
+      <p class="hero-sub">Ask me anything below - I'll reference your documentation, find the answer, and link to the source.</p>
+      <div class="prompt-chips">
+      </div>
+    </section>
+
+    <div id="result"></div>
+  </main>
+
+  <div class="composer">
+    <div class="composer-inner">
+      <form hx-post="/ask" hx-target="#result" hx-indicator="#spinner" hx-disabled-elt="button" autocomplete="off">
+        <div class="composer-pill">
+          <input
+            type="text"
+            name="question"
+            placeholder="What can Scout help you with?"
+            autofocus
+            required>
+          <button type="submit" class="send-btn" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </form>
+      <div id="spinner" class="htmx-indicator composer-spinner">Scout is thinking…</div>
+    </div>
+  </div>
+
+  <script src="/static/scout.js" defer></script>
+</body>
+</html>

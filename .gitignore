@@ -1,0 +1,26 @@
+# Secrets and credentials
+.env
+credentials.json
+token.json
+*.pem
+
+# Local vector store
+chroma_db/
+
+# Internal docs (staff guide, security audit) — kept out of the public repo
+docs/
+
+# Claude Code per-machine settings (permission allowlist is local)
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,23 @@
+<div class="sync-result">
+  {% set total = result.new + result.changed + result.deleted %}
+  {% if total == 0 %}
+    <span class="sync-ok">In sync — {{ result.unchanged }} files unchanged.</span>
+  {% else %}
+    <span class="sync-ok">Synced.</span>
+    {% if result.new %}<span class="chip new">+{{ result.new }} new</span>{% endif %}
+    {% if result.changed %}<span class="chip changed">~{{ result.changed }} changed</span>{% endif %}
+    {% if result.deleted %}<span class="chip deleted">−{{ result.deleted }} deleted</span>{% endif %}
+    <span class="chip unchanged">{{ result.unchanged }} unchanged</span>
+    <span class="chip chunks">{{ result.chunks_written }} chunks written</span>
+  {% endif %}
+  {% if result.skipped %}
+    <details class="skipped">
+      <summary>{{ result.skipped|length }} skipped (errors)</summary>
+      <ul>
+        {% for name, err in result.skipped %}
+          <li><b>{{ name }}</b>: {{ err }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+</div>
