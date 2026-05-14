@@ -114,7 +114,7 @@ For deeper architecture notes — security middleware, indexing internals, retri
 
 ## Project status & handoff
 
-Scout is a **local-only**, single-operator tool. It is not deployed to a server, has no shared multi-tenant version, and is intentionally bound to `127.0.0.1` (do not add `--host 0.0.0.0` to the uvicorn command — it would expose the app to the LAN).
+For now, Scout is a **local-only**, single-operator tool. It is not deployed to a server, has no shared multi-tenant version, and is intentionally bound to `127.0.0.1` (do not add `--host 0.0.0.0` to the uvicorn command — it would expose the app to the LAN).
 
 It was built to be **handoff-ready**: the next operator filling the same support role can clone this repo on their own machine, follow the *Setup* steps above, point `DRIVE_FOLDER_IDS` at the shared knowledge-base folders they have access to, and have an answer-with-citations workflow running in minutes. No infrastructure team, no shared service, no operations dependency.
 
