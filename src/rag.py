@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import functools
 import os
 import re
 from dataclasses import dataclass
@@ -188,11 +190,10 @@ def _is_list_question(question: str) -> bool:
     return any(p.search(question) for p in LIST_QUESTION_PATTERNS)
 
 
-def _master_list_file_ids(collection) -> set[str]:
-    """Identify file IDs whose names match the master-list patterns. One pass over all chunks."""
-    all_metas = collection.get(include=["metadatas"])
+def _master_list_file_ids_from_metas(metas: list[dict]) -> set[str]:
+    """Identify file IDs whose names match the master-list patterns from pre-fetched metadata."""
     out: set[str] = set()
-    for meta in all_metas["metadatas"]:
+    for meta in metas:
         name_lower = meta["file_name"].lower()
         if any(p in name_lower for p in MASTER_LIST_NAME_PATTERNS):
             out.add(meta["file_id"])
@@ -220,17 +221,19 @@ def _fetch_all_chunks_for_files(collection, file_ids: set[str]) -> list[Chunk]:
     return chunks
 
 
-def _filename_match_chunks(collection, entities: list[str]) -> list[Chunk]:
+def _filename_match_chunks_from_metas(
+    collection, entities: list[str], metas: list[dict]
+) -> list[Chunk]:
     """Chunks from files whose name contains >= MIN_FILENAME_MATCHES entity tokens.
     Targets 'pull up the X and Y draft' style lookups where the file is identifiable
-    by name but its body text doesn't echo the question well."""
+    by name but its body text doesn't echo the question well.
+    Uses pre-fetched metadata to avoid a second full table scan."""
     if len(entities) < MIN_FILENAME_MATCHES:
         return []
     lowered = [e.lower() for e in entities]
 
-    res = collection.get(include=["metadatas"])
     file_score: dict[str, int] = {}
-    for meta in res["metadatas"]:
+    for meta in metas:
         fid = meta["file_id"]
         if fid in file_score:
             continue
@@ -255,7 +258,7 @@ def _filename_match_chunks(collection, entities: list[str]) -> list[Chunk]:
     return out
 
 
-def _retrieve(question: str) -> tuple[list[Chunk], list[Source]]:
+async def _retrieve(question: str) -> tuple[list[Chunk], list[Source]]:
     """Hybrid retrieval: semantic + keyword + filename-match + (for list-style questions) full master lists."""
     collection = get_collection()
     chunks: list[Chunk] = []
@@ -264,10 +267,17 @@ def _retrieve(question: str) -> tuple[list[Chunk], list[Source]]:
     cap = MAX_CHUNKS_FOR_LIST_QUESTION if list_mode else MAX_CHUNKS_TO_LLM
     entities = _extract_entities(question)
 
+    # Single metadata scan shared by both list-mode and filename-match paths.
+    # Skip entirely when neither path needs it (short questions with < 2 entity tokens).
+    needs_meta_scan = list_mode or len(entities) >= MIN_FILENAME_MATCHES
+    all_metas: list[dict] = []
+    if needs_meta_scan:
+        all_metas = collection.get(include=["metadatas"])["metadatas"]
+
     # For list/category questions, dump the entire master list docs first so Claude
     # has the full enumeration to categorize against.
     if list_mode:
-        master_ids = _master_list_file_ids(collection)
+        master_ids = _master_list_file_ids_from_metas(all_metas)
         for chunk in _fetch_all_chunks_for_files(collection, master_ids):
             if chunk.chunk_id in seen:
                 continue
@@ -277,7 +287,7 @@ def _retrieve(question: str) -> tuple[list[Chunk], list[Source]]:
     # Filename-match: if multiple entity tokens collide on a single file's name, that
     # file is almost certainly the one the user is asking about. Prioritize it before
     # semantic/keyword so it lands a low source number.
-    for chunk in _filename_match_chunks(collection, entities):
+    for chunk in _filename_match_chunks_from_metas(collection, entities, all_metas):
         if chunk.chunk_id in seen:
             continue
         seen.add(chunk.chunk_id)
@@ -290,22 +300,33 @@ def _retrieve(question: str) -> tuple[list[Chunk], list[Source]]:
         seen.add(cid)
         chunks.append(_chunk_from_result(cid, doc, meta))
 
+    # Keyword lookups: Chroma's $contains is case-sensitive; try a couple casings.
+    # All variants are dispatched concurrently via run_in_executor.
+    loop = asyncio.get_running_loop()
+    variants: list[str] = []
     for entity in entities[:4]:
-        # Chroma's $contains is case-sensitive; try a couple casings.
-        for variant in {entity, entity.lower(), entity.title()}:
-            try:
-                kw = collection.get(
+        variants.extend({entity, entity.lower(), entity.title()})
+
+    async def _kw(variant: str) -> dict:
+        try:
+            return await loop.run_in_executor(
+                None,
+                functools.partial(
+                    collection.get,
                     where_document={"$contains": variant},
                     include=["documents", "metadatas"],
                     limit=KEYWORD_K_PER_ENTITY,
-                )
-            except Exception:
+                ),
+            )
+        except Exception:
+            return {"ids": [], "documents": [], "metadatas": []}
+
+    for kw in await asyncio.gather(*[_kw(v) for v in variants]):
+        for cid, doc, meta in zip(kw["ids"], kw["documents"], kw["metadatas"]):
+            if cid in seen:
                 continue
-            for cid, doc, meta in zip(kw["ids"], kw["documents"], kw["metadatas"]):
-                if cid in seen:
-                    continue
-                seen.add(cid)
-                chunks.append(_chunk_from_result(cid, doc, meta))
+            seen.add(cid)
+            chunks.append(_chunk_from_result(cid, doc, meta))
 
     chunks = chunks[:cap]
 
@@ -355,7 +376,7 @@ def _filter_to_cited_sources(text: str, sources: list[Source]) -> list[Source]:
 
 async def ask(question: str) -> Answer:
     load_dotenv(ROOT / ".env")
-    chunks, sources = _retrieve(question)
+    chunks, sources = await _retrieve(question)
 
     if not chunks:
         return Answer(text="No matching documents found in the index.", sources=[])

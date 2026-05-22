@@ -28,6 +28,8 @@ CHROMA_DIR = ROOT / "chroma_db"
 COLLECTION_NAME = "drive_files"
 
 CHUNK_SIZE = 800
+
+_collection_cache = None
 CHUNK_OVERLAP = 100
 EMBED_MODEL = "all-MiniLM-L6-v2"
 
@@ -70,18 +72,21 @@ def chunk_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) 
 
 
 def get_collection(reset: bool = False):
-    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    embed_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=EMBED_MODEL)
-    if reset:
-        try:
-            client.delete_collection(COLLECTION_NAME)
-        except Exception:
-            pass
-    return client.get_or_create_collection(
-        name=COLLECTION_NAME,
-        embedding_function=embed_fn,
-        metadata={"hnsw:space": "cosine"},
-    )
+    global _collection_cache
+    if reset or _collection_cache is None:
+        client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+        embed_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=EMBED_MODEL)
+        if reset:
+            try:
+                client.delete_collection(COLLECTION_NAME)
+            except Exception:
+                pass
+        _collection_cache = client.get_or_create_collection(
+            name=COLLECTION_NAME,
+            embedding_function=embed_fn,
+            metadata={"hnsw:space": "cosine"},
+        )
+    return _collection_cache
 
 
 def _stored_file_state(collection) -> dict[str, tuple[str, list[str]]]:
