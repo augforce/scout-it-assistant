@@ -24,3 +24,6 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+
+# Demo media (large binaries; not diffable)
+*.mp4

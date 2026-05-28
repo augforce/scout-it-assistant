@@ -1,33 +1,22 @@
-<div class="answer-block">
+<div class="answer-block" data-request-id="{{ request_id }}">
   <div class="answer-meta">
     <span class="meta-label">YOU ASKED</span>
     <div class="question">{{ question }}</div>
   </div>
 
+  <div class="answer-warnings-slot"></div>
+
   <div class="layout">
     <article class="answer">
-      {{ answer_html | safe }}
+      {% if has_results %}
+      <div class="answer-body streaming"
+           data-stream-url="/ask/stream/{{ request_id }}"
+           data-finalize-url="/ask/finalize/{{ request_id }}"></div>
+      {% else %}
+      <div class="answer-body">No matching documents found in the index.</div>
+      {% endif %}
     </article>
 
-    {% if sources %}
-    <aside class="sources">
-      <h2>Sources <span class="sources-count">{{ sources|length }}</span></h2>
-      <ul class="source-list">
-        {% for s in sources %}
-        {% if 'pdf' in s.mime_type %}{% set kind = 'pdf' %}
-        {% elif 'spreadsheet' in s.mime_type or 'sheet' in s.mime_type %}{% set kind = 'sheet' %}
-        {% elif 'document' in s.mime_type %}{% set kind = 'doc' %}
-        {% else %}{% set kind = 'file' %}{% endif %}
-        <li id="source-{{ s.number }}" class="source-item">
-          <a href="{{ s.web_view_url }}" target="_blank" rel="noopener">
-            <span class="src-num">{{ s.number }}</span>
-            <span class="src-name">{{ s.file_name }}</span>
-            <span class="src-kind src-kind-{{ kind }}">{{ kind }}</span>
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </aside>
-    {% endif %}
+    <aside class="sources-slot"></aside>
   </div>
 </div>

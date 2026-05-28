@@ -374,6 +374,43 @@ body {
   color: var(--fg);
 }
 
+/* Empty slot placeholders — collapse cleanly while waiting for the
+   streaming + finalize step to swap in real content. */
+.answer-body.streaming::after {
+  content: '▌';
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--muted-soft);
+  animation: caret-blink 0.9s steps(2) infinite;
+}
+.sources-slot, .sources-empty { display: none; }
+
+/* Warnings emitted by the citation validator (out-of-range cites, missing
+   sources, etc). Yellow, not red — the answer is still usable. */
+.answer-warnings {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: #78350f;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.answer-warning::before {
+  content: '⚠ ';
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+@keyframes caret-blink {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 .answer strong { font-weight: 600; }
 
 .cite {
@@ -594,7 +631,8 @@ body {
   .scout-bot .legs-a, .scout-bot .legs-b,
   .scout-bot .wave-arm-a, .scout-bot .wave-arm-b,
   .scout-bot .static-arm-right,
-  .answer-block {
+  .answer-block,
+  .answer-body.streaming::after {
     animation: none;
   }
   .scout-bot .legs-b,

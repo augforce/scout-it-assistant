@@ -1,0 +1,22 @@
+{% if sources %}
+<aside class="sources">
+  <h2>Sources <span class="sources-count">{{ sources|length }}</span></h2>
+  <ul class="source-list">
+    {% for s in sources %}
+    {% if 'pdf' in s.mime_type %}{% set kind = 'pdf' %}
+    {% elif 'spreadsheet' in s.mime_type or 'sheet' in s.mime_type %}{% set kind = 'sheet' %}
+    {% elif 'document' in s.mime_type %}{% set kind = 'doc' %}
+    {% else %}{% set kind = 'file' %}{% endif %}
+    <li id="source-{{ s.number }}" class="source-item">
+      <a href="{{ s.web_view_url }}" target="_blank" rel="noopener">
+        <span class="src-num">{{ s.number }}</span>
+        <span class="src-name">{{ s.file_name }}</span>
+        <span class="src-kind src-kind-{{ kind }}">{{ kind }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</aside>
+{% else %}
+<aside class="sources-empty"></aside>
+{% endif %}

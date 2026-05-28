@@ -102,10 +102,9 @@ def _stored_file_state(collection) -> dict[str, tuple[str, list[str]]]:
     return out
 
 
-def _write_file_chunks(collection, f: dict) -> int:
+def _write_file_chunks(collection, service, f: dict) -> int:
     """Download + extract + chunk + upsert. Returns chunk count (0 if empty)."""
-    service_local = f.pop("_service")  # smuggled in by caller to avoid re-auth
-    data = download_file(service_local, f["id"], f["mimeType"])
+    data = download_file(service, f["id"], f["mimeType"])
     text = extract_text(data, f["mimeType"])
     chunks = chunk_text(text)
     if not chunks:
@@ -138,8 +137,7 @@ def _process_targeted(
     for i, f in enumerate(files, 1):
         try:
             collection.delete(where={"file_id": f["id"]})
-            f["_service"] = service
-            n = _write_file_chunks(collection, f)
+            n = _write_file_chunks(collection, service, f)
             result.chunks_written += n
             result.new += 1
             if verbose:
@@ -204,8 +202,7 @@ def _process_incremental(
         if is_changed:
             collection.delete(ids=stored[f["id"]][1])
         try:
-            f["_service"] = service
-            n = _write_file_chunks(collection, f)
+            n = _write_file_chunks(collection, service, f)
             result.chunks_written += n
             if verbose:
                 marker = "~" if is_changed else "+"

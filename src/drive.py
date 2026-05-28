@@ -145,12 +145,21 @@ def get_file_metadata(service, file_id: str) -> dict:
 
 
 def web_view_url(file_id: str, mime_type: str) -> str:
-    """Build a user-friendly URL that opens the file in Google's web UI."""
+    """Build a user-friendly URL that opens the file in Google's web UI.
+
+    The URL ends up in an `href` in the source sidebar. We hardcode the
+    `https://` prefix here so a future refactor that ever shifts to a Drive
+    API-supplied URL (which could in principle be attacker-controlled metadata)
+    can't sneak a `javascript:` scheme into the template — the assertion
+    locks the invariant down."""
     if mime_type == GOOGLE_DOC:
-        return f"https://docs.google.com/document/d/{file_id}"
-    if mime_type == GOOGLE_SHEET:
-        return f"https://docs.google.com/spreadsheets/d/{file_id}"
-    return f"https://drive.google.com/file/d/{file_id}/view"
+        url = f"https://docs.google.com/document/d/{file_id}"
+    elif mime_type == GOOGLE_SHEET:
+        url = f"https://docs.google.com/spreadsheets/d/{file_id}"
+    else:
+        url = f"https://drive.google.com/file/d/{file_id}/view"
+    assert url.startswith("https://"), f"unexpected URL scheme: {url}"
+    return url
 
 
 def _folder_ids_from_env() -> list[str]:
