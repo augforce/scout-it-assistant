@@ -2,11 +2,7 @@
 
 **A personal IT-support assistant.** Ask a question, Scout searches a chosen set of Google Drive folders, and answers with clickable citations back to the source documents.
 
-
-
-https://github.com/user-attachments/assets/25ac01e7-2953-462d-8c9a-2c3258b2eff2
-
-
+https://github.com/user-attachments/assets/27b70c13-6c4d-4e2f-abc0-597061418239
 
 Scout was built as a single-user assistant to answer day-to-day IT-support questions against an existing Drive-based knowledge base — approved-software lists, hardware inventory, onboarding/offboarding runbooks, vendor procedures, and so on. It runs entirely on the operator's machine, binds to `localhost`, and uses OAuth read-only access to Drive. There is no shared deployment.
 
